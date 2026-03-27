@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文档样式生成与修改系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        /* 左侧面板 - JSON 编辑器 */
+        .json-editor {
+            width: 100%;
+            height: 400px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .json-editor:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* 右侧面板 - 预览区域 */
+        .preview-area {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* 文档块样式 */
+        .doc-block {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .doc-block:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .doc-block.h1 {
+            border-left-color: #e74c3c;
+            background: #fadbd8;
+        }
+
+        .doc-block.h2 {
+            border-left-color: #3498db;
+            background: #d4e6f1;
+        }
+
+        .doc-block.text {
+            border-left-color: #27ae60;
+            background: #d5f5e3;
+        }
+
+        .doc-block.table {
+            border-left-color: #f39c12;
+            background: #fdebd0;
+        }
+
+        .block-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .block-type.h1 { background: #e74c3c; }
+        .block-type.h2 { background: #3498db; }
+        .block-type.text { background: #27ae60; }
+        .block-type.table { background: #f39c12; }
+
+        .block-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        /* 状态提示 */
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-bar.success {
+            border-left-color: #27ae60;
+            background: #d5f5e3;
+        }
+
+        .status-bar.error {
+            border-left-color: #e74c3c;
+            background: #fadbd8;
+        }
+
+        /* 表格预览 */
+        .table-preview {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .table-preview th,
+        .table-preview td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .table-preview th {
+            background: #f39c12;
+            color: white;
+            font-weight: bold;
+        }
+
+        .table-preview tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 智能文档样式生成与修改系统</h1>
+            <p>基于 Apache POI + LLM 的 Word 文档自动生成工具</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧面板 - JSON 编辑器 -->
+            <div class="panel">
+                <div class="panel-title">📝 JSON 文档结构编辑器</div>
+                <textarea 
+                    id="jsonEditor" 
+                    class="json-editor"
+                    placeholder='请输入 JSON 格式的文档结构，例如：
+{
+  "title": "人工智能技术发展报告",
+  "blocks": [
+    {
+      "type": "H1",
+      "content": "第一章：AI 技术概述"
+    },
+    {
+      "type": "TEXT",
+      "content": "人工智能（AI）是计算机科学的一个重要分支..."
+    },
+    {
+      "type": "H2",
+      "content": "1.1 机器学习基础"
+    }
+  ]
+}'></textarea>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="parseAndPreview()">🔍 解析并预览</button>
+                    <button class="btn btn-success" onclick="generateDocument()">✨ 生成 Word 文档</button>
+                    <button class="btn btn-warning" onclick="loadExample()">📋 加载示例</button>
+                    <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
+                </div>
+
+                <div id="statusBar" class="status-bar" style="display:none;"></div>
+            </div>
+
+            <!-- 右侧面板 - 预览区域 -->
+            <div class="panel">
+                <div class="panel-title">👁️ 文档样式预览</div>
+                <div id="previewArea" class="preview-area">
+                    <p style="color: #999; text-align: center; padding: 50px;">
+                        暂无预览内容，请在左侧输入 JSON 后点击"解析并预览"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 解析 JSON 并预览
+        function parseAndPreview() {
+            const jsonText = document.getElementById('jsonEditor').value.trim();
+            const previewArea = document.getElementById('previewArea');
+            const statusBar = document.getElementById('statusBar');
+
+            try {
+                if (!jsonText) {
+                    throw new Error('JSON 内容不能为空');
+                }
+
+                const data = JSON.parse(jsonText);
+                
+                // 验证基本结构
+                if (!data.blocks || !Array.isArray(data.blocks)) {
+                    throw new Error('JSON 必须包含 blocks 数组');
+                }
+
+                // 生成预览
+                let html = `<h2 style="color: #667eea; margin-bottom: 20px;">${escapeHtml(data.title || '未命名文档')}</h2>`;
+                
+                data.blocks.forEach((block, index) => {
+                    html += createBlockPreview(block, index);
+                });
+
+                previewArea.innerHTML = html;
+                showStatus('✅ 解析成功！共 ' + data.blocks.length + ' 个文档块', 'success');
+
+            } catch (error) {
+                previewArea.innerHTML = `<p style="color: #e74c3c; padding: 20px;">❌ 解析失败：${escapeHtml(error.message)}</p>`;
+                showStatus('❌ 解析失败：' + error.message, 'error');
+            }
+        }
+
+        // 创建块预览
+        function createBlockPreview(block, index) {
+            const type = block.type || 'UNKNOWN';
+            const content = block.content || '';
+            
+            let html = `<div class="doc-block ${type.toLowerCase()}">`;
+            html += `<span class="block-type ${type.toLowerCase()}">${type}</span>`;
+            
+            if (type === 'TABLE') {
+                html += '<div class="block-content">';
+                if (block.headers && block.data) {
+                    html += '<table class="table-preview"><tr>';
+                    block.headers.forEach(h => {
+                        html += `<th>${escapeHtml(h)}</th>`;
+                    });
+                    html += '</tr>';
+                    block.data.forEach(row => {
+                        html += '<tr>';
+                        row.forEach(cell => {
+                            html += `<td>${escapeHtml(cell)}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</table>';
+                } else {
+                    html += '<p>表格数据为空</p>';
+                }
+                html += '</div>';
+            } else {
+                html += `<div class="block-content">${escapeHtml(content)}</div>`;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        // 生成 Word 文档
+        async function generateDocument() {
+            const jsonText = document.getElementById('jsonEditor').value.trim();
+            const statusBar = document.getElementById('statusBar');
+
+            try {
+                const data = JSON.parse(jsonText);
+                
+                showStatus('⏳ 正在生成文档...', '');
+
+                const response = await fetch('http://localhost:8080/api/doc/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: JSON.stringify(data),
+                        templateName: 'template.docx'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`✅ 文档生成成功！文件名：${result.filename}`, 'success');
+                    
+                    // 提供下载链接
+                    setTimeout(() => {
+                        window.open(`http://localhost:8080/api/doc/download/${result.filename}`, '_blank');
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || '生成失败');
+                }
+
+            } catch (error) {
+                showStatus('❌ 生成失败：' + error.message, 'error');
+            }
+        }
+
+        // 加载示例
+        function loadExample() {
+            const example = {
+                "title": "人工智能技术发展报告",
+                "blocks": [
+                    {
+                        "type": "H1",
+                        "content": "第一章：AI 技术概述"
+                    },
+                    {
+                        "type": "TEXT",
+                        "content": "人工智能（Artificial Intelligence，简称 AI）是计算机科学的一个重要分支，它致力于研究和开发用于模拟、延伸和扩展人类智能的理论、方法、技术和应用系统。"
+                    },
+                    {
+                        "type": "H2",
+                        "content": "1.1 机器学习基础"
+                    },
+                    {
+                        "type": "TEXT",
+                        "content": "机器学习是人工智能的核心领域之一，它通过算法和统计模型使计算机系统能够从数据中学习并改进性能，而无需进行明确的编程。"
+                    },
+                    {
+                        "type": "TABLE",
+                        "headers": ["技术名称", "应用场景", "成熟度"],
+                        "data": [
+                            ["深度学习", "图像识别、自然语言处理", "高"],
+                            ["强化学习", "游戏 AI、机器人控制", "中"],
+                            ["迁移学习", "跨领域应用", "发展中"]
+                        ]
+                    }
+                ]
+            };
+
+            document.getElementById('jsonEditor').value = JSON.stringify(example, null, 2);
+            parseAndPreview();
+            showStatus('✅ 已加载示例文档结构', 'success');
+        }
+
+        // 清空所有内容
+        function clearAll() {
+            document.getElementById('jsonEditor').value = '';
+            document.getElementById('previewArea').innerHTML = '<p style="color: #999; text-align: center; padding: 50px;">暂无预览内容，请在左侧输入 JSON 后点击"解析并预览"</p>';
+            document.getElementById('statusBar').style.display = 'none';
+        }
+
+        // 显示状态信息
+        function showStatus(message, type) {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.textContent = message;
+            statusBar.className = 'status-bar ' + type;
+            statusBar.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusBar.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 页面加载时自动加载示例
+        window.onload = function() {
+            loadExample();
+        };
+    </script>
+</body>
+</html>
