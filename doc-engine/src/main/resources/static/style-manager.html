@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文档样式生成与修改系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            padding: 0;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            font-size: 18px;
+            font-weight: bold;
+            color: #495057;
+            transition: all 0.3s;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
+            color: white;
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-box pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .example-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .example-list li {
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid #667eea;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .example-list li:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .style-preview {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .style-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .style-card h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .style-card .property {
+            font-size: 13px;
+            color: #666;
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 智能文档样式生成与修改系统</h1>
+            <p>基于大模型 API 的 Word 文档样式智能处理平台</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('generate')">✨ 样式生成</button>
+            <button class="nav-tab" onclick="switchTab('apply')">📄 样式应用</button>
+            <button class="nav-tab" onclick="switchTab('modify')">🔧 样式修改</button>
+        </div>
+
+        <!-- 样式生成 -->
+        <div id="generate-tab" class="tab-content active">
+            <h2 style="margin-bottom: 20px; color: #333;">通过自然语言生成 Word 样式</h2>
+            
+            <div class="form-group">
+                <label>样式描述：</label>
+                <textarea id="styleDescription" class="form-control" 
+                    placeholder="例如：生成一个商务报告样式，标题使用微软雅黑 16 号加粗，正文使用宋体 12 号，行距 1.5 倍"></textarea>
+            </div>
+
+            <div>
+                <button class="btn btn-primary" onclick="generateStyle()">
+                    🚀 生成样式
+                </button>
+                <button class="btn btn-info" onclick="loadExample('generate')">
+                    📋 加载示例
+                </button>
+            </div>
+
+            <div id="generateResult" style="display:none;"></div>
+        </div>
+
+        <!-- 样式应用 -->
+        <div id="apply-tab" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">将样式应用到 Word 文档</h2>
+            
+            <div class="form-group">
+                <label>上传文档：</label>
+                <div class="file-upload" onclick="document.getElementById('applyFile').click()">
+                    <p style="font-size: 18px; color: #666;">📁 点击选择 Word 文档 (.docx)</p>
+                    <p style="font-size: 14px; color: #999;">或直接拖拽文件到此处</p>
+                    <input type="file" id="applyFile" accept=".docx" onchange="handleFileSelect(this)">
+                </div>
+                <p id="applyFileName" style="margin-top: 10px; color: #667eea; font-weight: bold;"></p>
+            </div>
+
+            <div class="form-group">
+                <label>样式描述：</label>
+                <textarea id="applyStyleDesc" class="form-control" 
+                    placeholder="描述要应用的样式..."></textarea>
+            </div>
+
+            <div>
+                <button class="btn btn-success" onclick="applyStyle()">
+                    ✅ 应用样式并下载
+                </button>
+                <button class="btn btn-info" onclick="loadExample('apply')">
+                    📋 加载示例
+                </button>
+            </div>
+
+            <div id="applyResult" style="display:none;"></div>
+        </div>
+
+        <!-- 样式修改 -->
+        <div id="modify-tab" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">修改现有文档的样式</h2>
+            
+            <div class="form-group">
+                <label>上传文档：</label>
+                <div class="file-upload" onclick="document.getElementById('modifyFile').click()">
+                    <p style="font-size: 18px; color: #666;">📁 点击选择 Word 文档 (.docx)</p>
+                    <p style="font-size: 14px; color: #999;">或直接拖拽文件到此处</p>
+                    <input type="file" id="modifyFile" accept=".docx" onchange="handleFileSelect(this)">
+                </div>
+                <p id="modifyFileName" style="margin-top: 10px; color: #667eea; font-weight: bold;"></p>
+            </div>
+
+            <div class="form-group">
+                <label>修改要求：</label>
+                <textarea id="modificationDesc" class="form-control" 
+                    placeholder="例如：将文档中所有标题样式改为蓝色，加粗；正文改为宋体 11 号，行距 1.2 倍"></textarea>
+            </div>
+
+            <div>
+                <button class="btn btn-warning" onclick="modifyStyle()">
+                    🔧 修改样式并下载
+                </button>
+                <button class="btn btn-info" onclick="loadExample('modify')">
+                    📋 加载示例
+                </button>
+            </div>
+
+            <div id="modifyResult" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedApplyFile = null;
+        let selectedModifyFile = null;
+
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // 生成样式
+        async function generateStyle() {
+            const description = document.getElementById('styleDescription').value.trim();
+            const resultDiv = document.getElementById('generateResult');
+            
+            if (!description) {
+                showAlert(resultDiv, '请输入样式描述', 'danger');
+                return;
+            }
+
+            showLoading(resultDiv, '正在生成样式...');
+
+            try {
+                const formData = new FormData();
+                formData.append('description', description);
+
+                const response = await fetch('http://localhost:8080/api/style/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    const jsonPretty = JSON.stringify(JSON.parse(result.styleDefinition), null, 2);
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">✅ 样式生成成功！</div>
+                        <div class="style-preview">
+                            <h3 style="margin-bottom: 15px;">生成的样式定义：</h3>
+                            <pre>${jsonPretty}</pre>
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                } else {
+                    showAlert(resultDiv, '生成失败：' + result.message, 'danger');
+                }
+            } catch (error) {
+                showAlert(resultDiv, '生成失败：' + error.message, 'danger');
+            }
+        }
+
+        // 应用样式
+        async function applyStyle() {
+            const file = selectedApplyFile;
+            const styleDescription = document.getElementById('applyStyleDesc').value.trim();
+            const resultDiv = document.getElementById('applyResult');
+            
+            if (!file) {
+                showAlert(resultDiv, '请选择要处理的文档', 'danger');
+                return;
+            }
+
+            if (!styleDescription) {
+                showAlert(resultDiv, '请输入样式描述', 'danger');
+                return;
+            }
+
+            showLoading(resultDiv, '正在应用样式...');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('styleDescription', styleDescription);
+
+                const response = await fetch('http://localhost:8080/api/style/apply', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // 触发下载
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name.replace('.docx', '_styled.docx');
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    showAlert(resultDiv, '✅ 样式应用成功！文档已开始下载', 'success');
+                } else {
+                    const result = await response.json();
+                    showAlert(resultDiv, '应用失败：' + result.message, 'danger');
+                }
+            } catch (error) {
+                showAlert(resultDiv, '应用失败：' + error.message, 'danger');
+            }
+        }
+
+        // 修改样式
+        async function modifyStyle() {
+            const file = selectedModifyFile;
+            const modificationDesc = document.getElementById('modificationDesc').value.trim();
+            const resultDiv = document.getElementById('modifyResult');
+            
+            if (!file) {
+                showAlert(resultDiv, '请选择要处理的文档', 'danger');
+                return;
+            }
+
+            if (!modificationDesc) {
+                showAlert(resultDiv, '请输入修改要求', 'danger');
+                return;
+            }
+
+            showLoading(resultDiv, '正在修改样式...');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('modificationDescription', modificationDesc);
+
+                const response = await fetch('http://localhost:8080/api/style/modify', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name.replace('.docx', '_modified.docx');
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    showAlert(resultDiv, '✅ 样式修改成功！文档已开始下载', 'success');
+                } else {
+                    const result = await response.json();
+                    showAlert(resultDiv, '修改失败：' + result.message, 'danger');
+                }
+            } catch (error) {
+                showAlert(resultDiv, '修改失败：' + error.message, 'danger');
+            }
+        }
+
+        // 文件选择处理
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                if (input.id === 'applyFile') {
+                    selectedApplyFile = file;
+                    document.getElementById('applyFileName').textContent = '已选择：' + file.name;
+                } else if (input.id === 'modifyFile') {
+                    selectedModifyFile = file;
+                    document.getElementById('modifyFileName').textContent = '已选择：' + file.name;
+                }
+            }
+        }
+
+        // 加载示例
+        function loadExample(type) {
+            const examples = {
+                'generate': [
+                    '生成一个商务报告样式，标题使用微软雅黑 16 号加粗居中，正文使用宋体 12 号，行距 1.5 倍，首行缩进 2 字符',
+                    '创建一个学术论文样式，一级标题黑体 18 号加粗，二级标题楷体 14 号加粗，正文宋体 12 号',
+                    '设计一个现代简约风格，所有文字使用无衬线字体，标题 20 号，正文 11 号，行距 1.8 倍'
+                ],
+                'apply': [
+                    '应用商务正式样式，标题蓝色加粗，正文清晰易读，整体专业大方',
+                    '应用学术风格，传统印刷体，层次分明，适合论文排版'
+                ],
+                'modify': [
+                    '将所有标题样式改为蓝色，加粗；正文改为宋体 11 号，行距 1.2 倍',
+                    '将整个文档的字体统一为微软雅黑，标题加大两号，正文行距增加到 1.5 倍',
+                    '将所有表格改为浅灰色背景，细边框，标题行深蓝色背景白色文字'
+                ]
+            };
+
+            const exampleText = examples[type][Math.floor(Math.random() * examples[type].length)];
+            
+            if (type === 'generate') {
+                document.getElementById('styleDescription').value = exampleText;
+            } else if (type === 'apply') {
+                document.getElementById('applyStyleDesc').value = exampleText;
+            } else if (type === 'modify') {
+                document.getElementById('modificationDesc').value = exampleText;
+            }
+        }
+
+        // 显示加载动画
+        function showLoading(container, message) {
+            container.innerHTML = `<div class="alert alert-info"><span class="loading"></span>${message}</div>`;
+            container.style.display = 'block';
+        }
+
+        // 显示提示信息
+        function showAlert(container, message, type) {
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            container.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    container.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // 拖拽上传支持
+        ['apply-tab', 'modify-tab'].forEach(tabId => {
+            const tab = document.getElementById(tabId);
+            const fileUpload = tab.querySelector('.file-upload');
+            
+            fileUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUpload.style.borderColor = '#667eea';
+                fileUpload.style.background = '#e9ecef';
+            });
+            
+            fileUpload.addEventListener('dragleave', () => {
+                fileUpload.style.borderColor = '#ddd';
+                fileUpload.style.background = 'transparent';
+            });
+            
+            fileUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUpload.style.borderColor = '#ddd';
+                fileUpload.style.background = 'transparent';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const input = tab.querySelector('input[type="file"]');
+                    input.files = files;
+                    handleFileSelect(input);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
