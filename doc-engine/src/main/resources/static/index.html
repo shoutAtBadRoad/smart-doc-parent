@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文档生成系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .download-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+
+        .download-link:hover {
+            background-color: #218838;
+        }
+
+        .template-info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 智能文档生成系统</h1>
+        <p class="subtitle">基于 AI 技术的自动化文档生成工具</p>
+
+        <form id="generateForm">
+            <div class="form-group">
+                <label for="prompt">文档主题/提示词</label>
+                <textarea 
+                    id="prompt" 
+                    name="prompt" 
+                    placeholder="请输入您想要生成的文档主题，例如：'人工智能技术发展报告'"
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="template">选择模板</label>
+                <select id="template" name="template" required>
+                    <option value="">-- 请选择模板 --</option>
+                </select>
+                <p class="template-info">提示：可先上传 Word 模板文件</p>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                生成文档
+            </button>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+
+        // 页面加载时获取模板列表
+        document.addEventListener('DOMContentLoaded', loadTemplates);
+
+        // 加载模板列表
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`${API_BASE}/template/list`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const templateSelect = document.getElementById('template');
+                    templateSelect.innerHTML = '<option value="">-- 请选择模板 --</option>';
+                    
+                    data.templates.forEach(template => {
+                        const option = document.createElement('option');
+                        option.value = template;
+                        option.textContent = template;
+                        templateSelect.appendChild(option);
+                    });
+                } else {
+                    showMessage('加载模板失败：' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('加载模板失败:', error);
+                showMessage('无法连接到服务器，请确保后端已启动', 'error');
+            }
+        }
+
+        // 表单提交处理
+        document.getElementById('generateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const prompt = document.getElementById('prompt').value.trim();
+            const templateName = document.getElementById('template').value;
+            
+            if (!prompt) {
+                showMessage('请输入文档主题', 'error');
+                return;
+            }
+            
+            if (!templateName) {
+                showMessage('请选择模板', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span>生成中...';
+
+            try {
+                const response = await fetch(`${API_BASE}/doc/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        templateName: templateName
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(
+                        `文档生成成功！<br>文件名：${data.filename}<br>
+                        <a href="${API_BASE}/doc/download/${data.filename}" class="download-link" target="_blank">
+                            ⬇️ 点击下载文档
+                        </a>`,
+                        'success'
+                    );
+                } else {
+                    showMessage('生成失败：' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('生成文档失败:', error);
+                showMessage('网络错误，请稍后重试', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+
+        // 显示消息
+        function showMessage(content, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.innerHTML = content;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            // 3 秒后自动隐藏（成功消息）
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 10000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+com\example\docgen\DocumentGeneratorApplication.class
+com\example\docgen\model\DocumentBlock.class
+com\example\docgen\service\DocumentBuilderService$1.class
+com\example\docgen\config\FileConfig.class
+com\example\docgen\controller\TemplateController.class
+com\example\docgen\service\DocumentBuilderService.class
+com\example\docgen\controller\DocumentController.class
+com\example\docgen\service\TemplateService.class
